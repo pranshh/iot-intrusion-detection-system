@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 
 # Load your pre-trained models from the directory
 model_paths = {
@@ -77,6 +78,17 @@ input_data['Attack_subType'] = st.selectbox(
 
 # Convert input data to DataFrame
 input_df = pd.DataFrame([input_data])
+
+# Label Encoding for 'Device_Name', 'Attack', and 'Attack_subType'
+label_encoders = {
+    'Device_Name': LabelEncoder(),
+    'Attack': LabelEncoder(),
+    'Attack_subType': LabelEncoder()
+}
+
+# Fit and transform encoders
+for column, encoder in label_encoders.items():
+    input_df[column] = encoder.fit_transform(input_df[column])
 
 # Model selection
 model_choice = st.selectbox("Choose a model", options=list(models.keys()))
