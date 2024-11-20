@@ -46,9 +46,34 @@ input_data['HpHp_L0.1_magnitude'] = st.number_input('HpHp_L0.1_magnitude', forma
 input_data['HpHp_L0.1_radius'] = st.number_input('HpHp_L0.1_radius', format="%.6f")
 input_data['HpHp_L0.1_covariance'] = st.number_input('HpHp_L0.1_covariance', format="%.6f")
 input_data['HpHp_L0.1_pcc'] = st.number_input('HpHp_L0.1_pcc', format="%.6f")
-input_data['Device_Name'] = st.text_input('Device_Name')
-input_data['Attack'] = st.text_input('Attack')
-input_data['Attack_subType'] = st.text_input('Attack_subType')
+
+# Dropdown menu for 'Device_Name'
+input_data['Device_Name'] = st.selectbox(
+    'Device_Name', 
+    [
+        'Philips_B120N10_Baby_Monitor', 
+        'Danmini_Doorbell', 
+        'SimpleHome_XCS7_1002_WHT_Security_Camera', 
+        'SimpleHome_XCS7_1003_WHT_Security_Camera', 
+        'Provision_PT_838_Security_Camera', 
+        'Ecobee_Thermostat', 
+        'Provision_PT_737E_Security_Camera', 
+        'Samsung_SNH_1011_N_Webcam', 
+        'Ennio_Doorbell'
+    ]
+)
+
+# Dropdown menu for 'Attack'
+input_data['Attack'] = st.selectbox(
+    'Attack', 
+    ['mirai', 'gafgyt', 'Normal']
+)
+
+# Dropdown menu for 'Attack_subType'
+input_data['Attack_subType'] = st.selectbox(
+    'Attack_subType', 
+    ['udp', 'tcp', 'scan', 'syn', 'ack', 'Normal', 'udpplain', 'combo', 'junk']
+)
 
 # Convert input data to DataFrame
 input_df = pd.DataFrame([input_data])
