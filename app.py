@@ -13,6 +13,13 @@ model_paths = {
 }  
 models = {name: joblib.load(path) for name, path in model_paths.items()}
 
+# Load the pre-fitted label encoders
+encoders = {
+    'Device_Name': joblib.load('Device_Name_encoder.pkl'),
+    'Attack': joblib.load('Attack_encoder.pkl'),
+    'Attack_subType': joblib.load('Attack_subType_encoder.pkl')
+}
+
 # Function to predict using the selected model
 def predict(model, input_data):
     return model.predict(input_data)
@@ -79,16 +86,9 @@ input_data['Attack_subType'] = st.selectbox(
 # Convert input data to DataFrame
 input_df = pd.DataFrame([input_data])
 
-# Label Encoding for 'Device_Name', 'Attack', and 'Attack_subType'
-label_encoders = {
-    'Device_Name': LabelEncoder(),
-    'Attack': LabelEncoder(),
-    'Attack_subType': LabelEncoder()
-}
-
-# Fit and transform encoders
-for column, encoder in label_encoders.items():
-    input_df[column] = encoder.fit_transform(input_df[column])
+# Apply Label Encoding using the loaded encoders
+for column, encoder in encoders.items():
+    input_df[column] = encoder.transform(input_df[column])
 
 # Model selection
 model_choice = st.selectbox("Choose a model", options=list(models.keys()))
