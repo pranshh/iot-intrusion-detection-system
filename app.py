@@ -1,105 +1,93 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import numpy as np
-from sklearn.preprocessing import LabelEncoder
 
-# Load your pre-trained models from the directory
-model_paths = {
-    "Random Forest": "rf_classifier",
-    "Logistic Regression": "logreg_classifier",
-    "LightGBM": "lgbm_classifier",
-    "XGBoost": "xgb_classifier",
-}  
-models = {name: joblib.load(path) for name, path in model_paths.items()}
+# Load the encoders and classifier
+device_name_encoder = joblib.load("Device_Name_encoder.pkl")
+attack_encoder = joblib.load("Attack_encoder.pkl")
+attack_subtype_encoder = joblib.load("Attack_subType_encoder.pkl")
+rf_classifier = joblib.load("rf_classifier")
 
-# Load the pre-fitted label encoders
-encoders = {
-    'Device_Name': joblib.load('Device_Name_encoder.pkl'),
-    'Attack': joblib.load('Attack_encoder.pkl'),
-    'Attack_subType': joblib.load('Attack_subType_encoder.pkl')
-}
+# Dropdown options
+device_names = [
+    'Philips_B120N10_Baby_Monitor', 
+    'Danmini_Doorbell', 
+    'SimpleHome_XCS7_1002_WHT_Security_Camera', 
+    'SimpleHome_XCS7_1003_WHT_Security_Camera', 
+    'Provision_PT_838_Security_Camera', 
+    'Ecobee_Thermostat', 
+    'Provision_PT_737E_Security_Camera', 
+    'Samsung_SNH_1011_N_Webcam', 
+    'Ennio_Doorbell'
+]
+attacks = ['mirai', 'gafgyt', 'Normal']
+attack_subtypes = ['udp', 'tcp', 'scan', 'syn', 'ack', 'Normal', 'udpplain', 'combo', 'junk']
 
-# Function to predict using the selected model
-def predict(model, input_data):
-    return model.predict(input_data)
+# Streamlit app
+st.title("IoT Device Attack Prediction")
 
-# Streamlit interface
-st.title('IoT Intrusion Detection System')
+# Input form
+with st.form("input_form"):
+    st.subheader("Input Features")
+    
+    # Dropdowns for categorical variables
+    device_name = st.selectbox("Device Name", device_names)
+    attack = st.selectbox("Attack Type", attacks)
+    attack_subtype = st.selectbox("Attack Subtype", attack_subtypes)
+    
+    # Numeric input for other features
+    numerical_features = {}
+    for feature in [
+        "MI_dir_L0.1_weight", "MI_dir_L0.1_mean", "MI_dir_L0.1_variance", 
+        "H_L0.1_weight", "H_L0.1_mean", "H_L0.1_variance", 
+        "HH_L0.1_weight", "HH_L0.1_mean", "HH_L0.1_std", "HH_L0.1_magnitude", 
+        "HH_L0.1_radius", "HH_L0.1_covariance", "HH_L0.1_pcc", 
+        "HH_jit_L0.1_weight", "HH_jit_L0.1_mean", "HH_jit_L0.1_variance", 
+        "HpHp_L0.1_weight", "HpHp_L0.1_mean", "HpHp_L0.1_std", 
+        "HpHp_L0.1_magnitude", "HpHp_L0.1_radius", "HpHp_L0.1_covariance", "HpHp_L0.1_pcc"
+    ]:
+        numerical_features[feature] = st.number_input(f"{feature}", value=0.0)
+    
+    submitted = st.form_submit_button("Predict")
 
-# Create input fields for each column
-st.header('Input Features')
-input_data = {}
-
-input_data['MI_dir_L0.1_weight'] = st.number_input('MI_dir_L0.1_weight', format="%.6f")
-input_data['MI_dir_L0.1_mean'] = st.number_input('MI_dir_L0.1_mean', format="%.6f")
-input_data['MI_dir_L0.1_variance'] = st.number_input('MI_dir_L0.1_variance', format="%.6f")
-input_data['H_L0.1_weight'] = st.number_input('H_L0.1_weight', format="%.6f")
-input_data['H_L0.1_mean'] = st.number_input('H_L0.1_mean', format="%.6f")
-input_data['H_L0.1_variance'] = st.number_input('H_L0.1_variance', format="%.6f")
-input_data['HH_L0.1_weight'] = st.number_input('HH_L0.1_weight', format="%.6f")
-input_data['HH_L0.1_mean'] = st.number_input('HH_L0.1_mean', format="%.6f")
-input_data['HH_L0.1_std'] = st.number_input('HH_L0.1_std', format="%.6f")
-input_data['HH_L0.1_magnitude'] = st.number_input('HH_L0.1_magnitude', format="%.6f")
-input_data['HH_L0.1_radius'] = st.number_input('HH_L0.1_radius', format="%.6f")
-input_data['HH_L0.1_covariance'] = st.number_input('HH_L0.1_covariance', format="%.6f")
-input_data['HH_L0.1_pcc'] = st.number_input('HH_L0.1_pcc', format="%.6f")
-input_data['HH_jit_L0.1_weight'] = st.number_input('HH_jit_L0.1_weight', format="%.6f")
-input_data['HH_jit_L0.1_mean'] = st.number_input('HH_jit_L0.1_mean', format="%.6f")
-input_data['HH_jit_L0.1_variance'] = st.number_input('HH_jit_L0.1_variance', format="%.6f")
-input_data['HpHp_L0.1_weight'] = st.number_input('HpHp_L0.1_weight', format="%.6f")
-input_data['HpHp_L0.1_mean'] = st.number_input('HpHp_L0.1_mean', format="%.6f")
-input_data['HpHp_L0.1_std'] = st.number_input('HpHp_L0.1_std', format="%.6f")
-input_data['HpHp_L0.1_magnitude'] = st.number_input('HpHp_L0.1_magnitude', format="%.6f")
-input_data['HpHp_L0.1_radius'] = st.number_input('HpHp_L0.1_radius', format="%.6f")
-input_data['HpHp_L0.1_covariance'] = st.number_input('HpHp_L0.1_covariance', format="%.6f")
-input_data['HpHp_L0.1_pcc'] = st.number_input('HpHp_L0.1_pcc', format="%.6f")
-
-# Dropdown menu for 'Device_Name'
-input_data['Device_Name'] = st.selectbox(
-    'Device_Name', 
-    [
-        'Philips_B120N10_Baby_Monitor', 
-        'Danmini_Doorbell', 
-        'SimpleHome_XCS7_1002_WHT_Security_Camera', 
-        'SimpleHome_XCS7_1003_WHT_Security_Camera', 
-        'Provision_PT_838_Security_Camera', 
-        'Ecobee_Thermostat', 
-        'Provision_PT_737E_Security_Camera', 
-        'Samsung_SNH_1011_N_Webcam', 
-        'Ennio_Doorbell'
+if submitted:
+    # Encode categorical inputs
+    encoded_device_name = device_name_encoder.transform([device_name])[0]
+    encoded_attack = attack_encoder.transform([attack])[0]
+    encoded_attack_subtype = attack_subtype_encoder.transform([attack_subtype])[0]
+    
+    # Combine inputs into a single list
+    input_data = [
+        numerical_features["MI_dir_L0.1_weight"], 
+        numerical_features["MI_dir_L0.1_mean"], 
+        numerical_features["MI_dir_L0.1_variance"], 
+        numerical_features["H_L0.1_weight"], 
+        numerical_features["H_L0.1_mean"], 
+        numerical_features["H_L0.1_variance"], 
+        numerical_features["HH_L0.1_weight"], 
+        numerical_features["HH_L0.1_mean"], 
+        numerical_features["HH_L0.1_std"], 
+        numerical_features["HH_L0.1_magnitude"], 
+        numerical_features["HH_L0.1_radius"], 
+        numerical_features["HH_L0.1_covariance"], 
+        numerical_features["HH_L0.1_pcc"], 
+        numerical_features["HH_jit_L0.1_weight"], 
+        numerical_features["HH_jit_L0.1_mean"], 
+        numerical_features["HH_jit_L0.1_variance"], 
+        numerical_features["HpHp_L0.1_weight"], 
+        numerical_features["HpHp_L0.1_mean"], 
+        numerical_features["HpHp_L0.1_std"], 
+        numerical_features["HpHp_L0.1_magnitude"], 
+        numerical_features["HpHp_L0.1_radius"], 
+        numerical_features["HpHp_L0.1_covariance"], 
+        numerical_features["HpHp_L0.1_pcc"], 
+        encoded_device_name, 
+        encoded_attack, 
+        encoded_attack_subtype
     ]
-)
-
-# Dropdown menu for 'Attack'
-input_data['Attack'] = st.selectbox(
-    'Attack', 
-    ['mirai', 'gafgyt', 'Normal']
-)
-
-# Dropdown menu for 'Attack_subType'
-input_data['Attack_subType'] = st.selectbox(
-    'Attack_subType', 
-    ['udp', 'tcp', 'scan', 'syn', 'ack', 'Normal', 'udpplain', 'combo', 'junk']
-)
-
-# Convert input data to DataFrame
-input_df = pd.DataFrame([input_data])
-
-# Apply Label Encoding using the loaded encoders
-for column, encoder in encoders.items():
-    input_df[column] = encoder.transform(input_df[column])
-
-# Model selection
-model_choice = st.selectbox("Choose a model", options=list(models.keys()))
-selected_model = models[model_choice]
-
-# Prediction button
-if st.button('Predict'):
-    # Apply the selected model
-    prediction = predict(selected_model, input_df)
-    st.write("Prediction:", prediction)
-
-# Output section
-st.header('Output')
-st.write("Prediction will be displayed here after input and model selection.")
+    
+    # Predict the label
+    prediction = rf_classifier.predict([input_data])[0]
+    
+    # Display prediction
+    st.success(f"The predicted label is: {prediction}")
